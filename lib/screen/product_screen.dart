@@ -1,8 +1,10 @@
-import 'dart:ui';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:provider_demo_api/model/product_model.dart';
 import 'package:provider_demo_api/provider/product_list_provider.dart';
+import 'package:http/http.dart' as http;
 
 class ProductScreen extends StatefulWidget {
   @override
@@ -10,11 +12,13 @@ class ProductScreen extends StatefulWidget {
 }
 
 class _ProductScreenState extends State<ProductScreen> {
-  @override
-  void initState() {
-    super.initState();
-    var dataModel = Provider.of<ProductProvider>(context,listen: false);
-    dataModel.fetchProductData();
+  Future<List<AllLocation>> getData() async {
+    final response = await http.get(
+        Uri.parse("https://vromonbuzz.com/api/home/alldata?appKey=VromonBuzz"));
+    if (response.statusCode == 200) {
+      List jsonResponse = json.decode(response.body);
+      return jsonResponse.map((e) => AllLocation.fromJson(e)).toList();
+    }
   }
 
   @override
@@ -24,24 +28,27 @@ class _ProductScreenState extends State<ProductScreen> {
           title: Text("Home"),
           backgroundColor: Colors.indigo[800],
         ),
-        body: Consumer<ProductProvider>(
-          builder: (context, auth, _) {
+        body: FutureBuilder<List<AllLocation>>(
+          future: getData(),
+          builder: (_, snapshot) {
+            if (snapshot.hasData) {
+              List<AllLocation> home = snapshot.data;
+              return ListView.builder(
 
-
-        return ListView.builder(
-              shrinkWrap: true,
-              primary: false,
-              itemCount: auth.product.length,
-              itemBuilder: (_, index) {
-                var aaaa = auth.product[index];
-                return ListTile(
-                  title: Text(
-                    aaaa.name,
-                    style: TextStyle(fontSize: 20),
-                  ),
-                );
-              },
-            );
+                shrinkWrap: true,
+                primary: false,
+                itemCount: home.length,
+                itemBuilder: (_, index) {
+                  return ListTile(
+                    title: Text(home[index].location),
+                  );
+                },
+              );
+            } else {
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+            }
           },
         ));
   }
